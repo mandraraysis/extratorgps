@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <meta name="description" content="Extrator de Grupos de WhatsApp - Cole o texto copiado e extraia os links de grupos do WhatsApp automaticamente.">
+    <meta name="keywords" content="WhatsApp, grupos, links de grupos, extrator de links, JavaScript, Bootstrap">
+    <meta name="author" content="Seu Nome">
+
+    <title>Extrator de Grupos de WhatsApp</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    
+    <!-- Bootstrap core CSS -->
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Custom styles -->
+    <style>
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            scrollbar-color: #28a745 #e9ecef; /* Cor da barra de rolagem */
+            scrollbar-width: thin; /* Largura da barra de rolagem */
+            cursor: default; /* Cursor padrão (seta) */
+            transition: background-color 0.3s, color 0.3s;
+        }
+        :root {
+            --bg-color: #f8f9fa;
+            --text-color: #212529;
+            --header-bg-color: #28a745;
+            --textarea-bg-color: #fff;
+            --textarea-border-color: #ced4da;
+        }
+        [data-theme="dark"] {
+            --bg-color: #212529;
+            --text-color: #f8f9fa;
+            --header-bg-color: #343a40;
+            --textarea-bg-color: #495057;
+            --textarea-border-color: #6c757d;
+        }
+        header {
+            background-color: var(--header-bg-color);
+            padding: 2rem 0;
+            color: white;
+        }
+        section {
+            padding: 2rem 0;
+        }
+        textarea {
+            resize: none;
+            border-radius: 5px;
+            border: 1px solid var(--textarea-border-color);
+            background-color: var(--textarea-bg-color);
+            color: var(--text-color);
+            font-size: 1rem;
+        }
+        .btn-extract, .btn-primary, .btn-secondary {
+            border-radius: 5px;
+            padding: 0.5rem 1rem;
+            transition: background-color 0.3s ease;
+        }
+        .btn-extract {
+            background-color: #ffc107;
+            color: black;
+            border: none;
+        }
+        .btn-extract:hover {
+            background-color: #e0a800;
+        }
+        .btn-primary {
+            background-color: #007bff;
+            color: white;
+            border: none;
+        }
+        .btn-primary:hover {
+            background-color: #0056b3;
+        }
+        .btn-secondary {
+            background-color: #6c757d;
+            color: white;
+            border: none;
+        }
+        .btn-secondary:hover {
+            background-color: #5a6268;
+        }
+        .output {
+            background-color: #e9ecef;
+            padding: 1rem;
+            border-radius: 5px;
+            border: 1px solid var(--textarea-border-color);
+            position: relative; /* Adicionado para posicionamento relativo */
+        }
+        .hidden {
+            display: none;
+        }
+        /* Estilo da barra de rolagem */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #e9ecef;
+        }
+        ::-webkit-scrollbar-thumb {
+            background-color: #28a745;
+            border-radius: 10px;
+            border: 2px solid #e9ecef;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background-color: #218838;
+        }
+        /* Estilo do botão de impressão */
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            .output, .output * {
+                visibility: visible;
+            }
+            .output {
+                position: absolute;
+                left: 0;
+                top: 0;
+            }
+        }
+    </style>
+</head>
+
+<body id="page-top">
+    <header class="text-center">
+        <div class="container">
+            <h2>Extrator de Grupos de WhatsApp</h2>
+            <button class="btn btn-secondary" onclick="toggleTheme()">Alternar Tema</button>
+        </div>
+    </header>
+
+    <section id="about" class="text-center">
+        <div class="container">
+            <h2>Cole o Texto Copiado</h2>
+            <div class="d-flex align-items-center mb-3">
+                <textarea id="entrada" class="form-control mr-2" style="width: calc(100% - 100px); min-height:200px;" aria-label="Área de texto para colar conteúdo copiado"></textarea>
+                <button class="btn btn-primary" onclick="colarTexto()">Colar</button>
+            </div>
+            <button class="btn-extract" onclick="submeteHTML()">EXTRAIR LINKS DE GRUPOS</button>
+            <button class="btn btn-secondary" onclick="limparTudo()">Limpar Tudo</button>
+            <h3 class="mt-4">LINKS EXTRAÍDOS ⤵️⤵️⤵️</h3>
+            <div class="row">
+                <div class="col-md-9">
+                    <div class="output my-3">
+                        <textarea id="saida" class="form-control mb-3" style="width:100%; min-height:200px;" readonly aria-label="Área de texto para links extraídos"></textarea>
+                        <div id="saidaLink" class="mt-3"></div>
+                    </div>
+                </div>
+                <div class="col-md-3 d-flex align-items-end justify-content-end">
+                    <button class="btn btn-primary" onclick="copiarTexto()">Copiar</button>
+                </div>
+            </div>
+            <button class="btn btn-secondary" onclick="mostrarHistorico()">Mostrar Histórico</button>
+            <div id="historico" class="output hidden mt-3">
+                <h4>Histórico de Links Extraídos</h4>
+                <div id="historicoLinks"></div>
+            </div>
+            <div id="feedback" class="mt-2 hidden">Texto copiado!</div>
+            <div id="loading" class="hidden">Extraindo links, por favor aguarde...</div>
+        </div>
+    </section>
+
+    <!-- JavaScript -->
+    <script>
+        function submeteHTML() {
+            var html = document.getElementById("entrada").value;
+            var arr3 = html.match(/chat.whatsapp.com\/([a-zA-Z0-9]*[a-zA-Z0-9])/g);
+            console.log(arr3);
+            document.getElementById("saida").value = "";
+            document.getElementById("saidaLink").innerHTML = "";
+
+            // Mostrar o indicador de carregamento
+            document.getElementById("loading").classList.remove("hidden");
+
+            // Simular atraso para feedback visual
+            setTimeout(() => {
+                if (arr3) {
+                    arr3.forEach(preencherURL);
+                    salvarHistorico(arr3);
+                }
+
+                // Ocultar o indicador de carregamento
+                document.getElementById("loading").classList.add("hidden");
+            }, 1000); // Ajuste o tempo conforme necessário
+        }
+
+        function preencherURL(url) {
+            var sanitizedUrl = url.replace(/[<>]/g, ""); // Sanitização básica
+            document.getElementById("saida").value += "https://" + sanitizedUrl + '\r\n';
+            document.getElementById("saidaLink").innerHTML += 
+                "<a href='https://" + sanitizedUrl + "' target='_blank'>https://" + sanitizedUrl + "</a><br />";
+        }
+
+        function colarTexto() {
+            navigator.clipboard.readText().then(text => {
+                document.getElementById("entrada").value = text;
+            }).catch(err => {
+                console.error('Erro ao colar texto:', err);
+            });
+        }
+
+        function copiarTexto() {
+            var saida = document.getElementById("saida");
+            saida.select();
+            document.execCommand("copy");
+            mostrarFeedback();
+        }
+
+        function limparTudo() {
+            document.getElementById("entrada").value = "";
+            document.getElementById("saida").value = "";
+            document.getElementById("saidaLink").innerHTML = "";
+        }
+
+        function mostrarFeedback() {
+            var feedback = document.getElementById("feedback");
+            feedback.classList.remove("hidden");
+            setTimeout(() => {
+                feedback.classList.add("hidden");
+            }, 2000);
+        }
+
+        function toggleTheme() {
+            if (document.documentElement.getAttribute('data-theme') === 'dark') {
+                document.documentElement.removeAttribute('data-theme');
+            } else {
+                document.documentElement.setAttribute('data-theme', 'dark');
+            }
+        }
+
+        function salvarHistorico(links) {
+            var historico = JSON.parse(localStorage.getItem('historicoLinks')) || [];
+            historico = historico.concat(links);
+            localStorage.setItem('historicoLinks', JSON.stringify(historico));
+        }
+
+        function mostrarHistorico() {
+            var historico = JSON.parse(localStorage.getItem('historicoLinks')) || [];
+            var historicoContainer = document.getElementById('historicoLinks');
+            historicoContainer.innerHTML = '';
+
+            if (historico.length > 0) {
+                historico.forEach(link => {
+                    historicoContainer.innerHTML += "<a href='https://" + link + "' target='_blank'>https://" + link + "</a><br />";
+                });
+            } else {
+                historicoContainer.innerHTML = "<p>Nenhum link armazenado no histórico.</p>";
+            }
+
+            document.getElementById('historico').classList.remove('hidden');
+        }
+    </script>
+</body>
+
+</html>
